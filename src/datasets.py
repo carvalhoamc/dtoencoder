@@ -15,3 +15,5 @@ datasets = ['autos',
             'kddcup-rootkit-imap_vs_back',
             'kddcup-guee_passwd_vs_satan',
             'lymphography-normal-fibrosis']
+
+datasets = ['thyroid']

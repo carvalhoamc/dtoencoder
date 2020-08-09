@@ -16,4 +16,5 @@ encoders = {'BackwardDifference': ce.BackwardDifferenceEncoder(),
             'SumEncoder': ce.SumEncoder(),
             'PolynomialEncoder': ce.PolynomialEncoder(),
             'TargetEncoder': ce.TargetEncoder(),
-            'WOEEncoder': ce.WOEEncoder()}
+            # 'WOEEncoder': ce.WOEEncoder()
+            }

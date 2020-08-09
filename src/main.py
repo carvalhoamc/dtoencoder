@@ -1,10 +1,11 @@
-from encode_datasets import createValidationData
-
+from encode_datasets import run
+import warnings
+warnings.filterwarnings('ignore')
 
 
 
 def main():
-	createValidationData('./../input/')
+	run()
 	
 	
 	
