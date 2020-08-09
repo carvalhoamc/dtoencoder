@@ -7,8 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1t3Q7b9Zc3OOovvDYI5PWNdq34iIdjx7U
 """
 
-!pip install category_encoders
-
 import category_encoders as ce
 import pandas as pd
 from sklearn.datasets import fetch_openml
@@ -56,7 +54,7 @@ print(classification_report_imbalanced(y_test, y_pred,digits=4))
 print('SMOTENC')
 
 
-smotenc = pl.make_pipeline(SMOTENC(categorical_features = nominal ),SVC()) 
+smotenc = pl.make_pipeline(SMOTENC(categorical_features = nominal ),SVC())
 
 y_pred = smotenc.fit(X_train,y_train).predict(X_test)
 print(classification_report_imbalanced(y_test, y_pred,digits=4))
