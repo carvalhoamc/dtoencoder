@@ -37,7 +37,6 @@ def run():
 		fname = './../input/' + filename + '.csv'
 		print(fname)
 		df_data = pd.read_csv(fname, header=None)
-		categorical_cols = get_obj_cols(df_data)
 		drop_na_col = True,  ## auto drop columns with nan's (bool)
 		drop_na_row = True,  ## auto drop rows with nan's (bool)
 		## pre-process missing values
@@ -53,6 +52,7 @@ def run():
 		
 		print(df_data.shape)
 		
+		categorical_cols = get_obj_cols(df_data.iloc[:, 0:-1])
 		Y = np.array(df_data.iloc[:, -1])
 		#X = normalize(np.array(df_data.iloc[:, 0:-1]))
 		X = np.array(df_data.iloc[:, 0:-1])
@@ -72,9 +72,9 @@ def run():
 			for name, clf in classifiers.items():
 				print('Ogirinal')
 				print(name)
-				target = OrdinalEncoder(cols=categorical_cols)
+				target = OneHotEncoder(cols=categorical_cols)
 				encoded_train = target.fit_transform(X_train, y_train)
-				encoded_test = target.fit_transform(X_test, y_test)
+				encoded_test = target.transform(X_test, y_test)
 				clf.fit(encoded_train, y_train)
 				y_pred = clf.predict(encoded_test)
 				res = classification_report_imbalanced(y_test, y_pred,
@@ -99,12 +99,13 @@ def run():
 				i = i + 1
 				
 				print('SMOTENC')
-				smotenc = pl.make_pipeline(
-					SMOTENC(categorical_features=categorical_cols), clf)
 				
-				y_pred = smotenc.fit(X_train, y_train).predict(X_test)
-				print(
-					classification_report_imbalanced(y_test, y_pred, digits=4))
+				smotenc = pl.make_pipeline(
+					SMOTENC(categorical_features=categorical_cols),clf)
+				y_pred = smotenc.fit(encoded_train, y_train).predict(encoded_test)
+				res = classification_report_imbalanced(y_test, y_pred,
+				                                       digits=4)
+				
 				identificador = filename + '_' + 'smotenc' + '_' + name
 				aux = res.split()
 				score = aux[-7:-1]
@@ -124,6 +125,8 @@ def run():
 				df.at[i, 'IBA'] = score[5]
 				i = i + 1
 				
+				
+			for name, clf in classifiers.items():
 				for name_encoder, encoder in encoders.items():
 					print(name_encoder)
 					for name_oversampling, osm in \

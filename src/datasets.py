@@ -5,4 +5,4 @@ datasets = ['abalone-3_vs_11',#ok
             'kddcup-rootkit-imap_vs_back',#ok
             ]
 
-datasets = ['contraceptive']
+datasets = ['abalone-3_vs_11']
