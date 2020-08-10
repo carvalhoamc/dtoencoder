@@ -5,4 +5,9 @@ datasets = ['abalone-3_vs_11',#ok
             'kddcup-rootkit-imap_vs_back',#ok
             ]
 
-datasets = ['abalone-3_vs_11']
+datasets = ['sphpV5QYya']
+
+#smofn-3-7-10
+#smux6
+#sthreeOf9
+#sphpV5QYya

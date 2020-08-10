@@ -54,11 +54,10 @@ def run():
 		
 		categorical_cols = get_obj_cols(df_data.iloc[:, 0:-1])
 		Y = np.array(df_data.iloc[:, -1])
-		#X = normalize(np.array(df_data.iloc[:, 0:-1]))
+		# X = normalize(np.array(df_data.iloc[:, 0:-1]))
 		X = np.array(df_data.iloc[:, 0:-1])
 		le = LabelEncoder()
 		Y = le.fit_transform(Y)
-		
 		
 		skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=40)
 		fold = 0
@@ -101,8 +100,10 @@ def run():
 				print('SMOTENC')
 				
 				smotenc = pl.make_pipeline(
-					SMOTENC(categorical_features=categorical_cols),clf)
-				y_pred = smotenc.fit(encoded_train, y_train).predict(encoded_test)
+						SMOTENC(categorical_features=categorical_cols), clf)
+				#y_pred = smotenc.fit(X_train, y_train).predict(X_test)
+				y_pred = smotenc.fit(encoded_train, y_train).predict(
+						encoded_test)
 				res = classification_report_imbalanced(y_test, y_pred,
 				                                       digits=4)
 				
@@ -124,8 +125,7 @@ def run():
 				df.at[i, 'GEO'] = score[4]
 				df.at[i, 'IBA'] = score[5]
 				i = i + 1
-				
-				
+			
 			for name, clf in classifiers.items():
 				for name_encoder, encoder in encoders.items():
 					print(name_encoder)
