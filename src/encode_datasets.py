@@ -1,12 +1,15 @@
 import glob
 import os
 
+from category_encoders import OneHotEncoder, TargetEncoder, OrdinalEncoder
+from category_encoders.utils import is_category
 from imblearn.metrics import classification_report_imbalanced
+from imblearn.over_sampling import SMOTENC
 from scipy.io.arff import loadarff
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize, LabelEncoder
 from imblearn import pipeline as pl
 
 from classifiers import classifiers
@@ -15,9 +18,18 @@ from encoders import encoders
 from oversampling import oversampling_methods
 
 
+def get_obj_cols(df):
+	""" Returns names of 'object' columns in the DataFrame. """
+	obj_cols = []
+	for idx, dt in enumerate(df.dtypes):
+		if dt == 'object' or is_category(dt):
+			obj_cols.append(df.columns.values[idx])
+	return obj_cols
+
+
 def run():
 	dfcol = ['ID', 'DATASET', 'FOLD', 'PREPROC', 'ALGORITHM', 'ORDER', 'ALPHA',
-	         'ENCODER','PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA']
+	         'ENCODER', 'PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA']
 	df = pd.DataFrame(columns=dfcol)
 	i = 0
 	
@@ -25,6 +37,7 @@ def run():
 		fname = './../input/' + filename + '.csv'
 		print(fname)
 		df_data = pd.read_csv(fname, header=None)
+		categorical_cols = get_obj_cols(df_data)
 		drop_na_col = True,  ## auto drop columns with nan's (bool)
 		drop_na_row = True,  ## auto drop rows with nan's (bool)
 		## pre-process missing values
@@ -41,18 +54,29 @@ def run():
 		print(df_data.shape)
 		
 		Y = np.array(df_data.iloc[:, -1])
-		X = normalize(np.array(df_data.iloc[:, 0:-1]))
+		#X = normalize(np.array(df_data.iloc[:, 0:-1]))
+		X = np.array(df_data.iloc[:, 0:-1])
+		le = LabelEncoder()
+		Y = le.fit_transform(Y)
+		
+		
 		skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=40)
 		fold = 0
 		for train_index, test_index in skf.split(X, Y):
 			X_train, X_test = X[train_index], X[test_index]
 			y_train, y_test = Y[train_index], Y[test_index]
+			y_train = y_train.reshape(len(y_train), 1)
+			y_test = y_test.reshape(len(y_test), 1)
 			print('Folder = ', fold)
-			fold = fold + 1
+			
 			for name, clf in classifiers.items():
 				print('Ogirinal')
 				print(name)
-				y_pred = clf.fit(X_train, y_train).predict(X_test)
+				target = OrdinalEncoder(cols=categorical_cols)
+				encoded_train = target.fit_transform(X_train, y_train)
+				encoded_test = target.fit_transform(X_test, y_test)
+				clf.fit(encoded_train, y_train)
+				y_pred = clf.predict(encoded_test)
 				res = classification_report_imbalanced(y_test, y_pred,
 				                                       digits=4)
 				identificador = filename + '_' + 'original' + '_' + name
@@ -74,12 +98,31 @@ def run():
 				df.at[i, 'IBA'] = score[5]
 				i = i + 1
 				
-				# print('SMOTENC')
-				# smotenc = pl.make_pipeline(
-				# SMOTENC(categorical_features=nominal), SVC())
-				# y_pred = smotenc.fit(X_train, y_train).predict(X_test)
-				# print(classification_report_imbalanced(y_test, y_pred,
-				# digits=4))
+				print('SMOTENC')
+				smotenc = pl.make_pipeline(
+					SMOTENC(categorical_features=categorical_cols), clf)
+				
+				y_pred = smotenc.fit(X_train, y_train).predict(X_test)
+				print(
+					classification_report_imbalanced(y_test, y_pred, digits=4))
+				identificador = filename + '_' + 'smotenc' + '_' + name
+				aux = res.split()
+				score = aux[-7:-1]
+				df.at[i, 'ID'] = identificador
+				df.at[i, 'DATASET'] = filename
+				df.at[i, 'FOLD'] = fold
+				df.at[i, 'PREPROC'] = 'smotenc'
+				df.at[i, 'ALGORITHM'] = name
+				df.at[i, 'ORDER'] = 'NONE'
+				df.at[i, 'ALPHA'] = 'NONE'
+				df.at[i, 'ENCODER'] = 'NONE'
+				df.at[i, 'PRE'] = score[0]
+				df.at[i, 'REC'] = score[1]
+				df.at[i, 'SPE'] = score[2]
+				df.at[i, 'F1'] = score[3]
+				df.at[i, 'GEO'] = score[4]
+				df.at[i, 'IBA'] = score[5]
+				i = i + 1
 				
 				for name_encoder, encoder in encoders.items():
 					print(name_encoder)
@@ -94,7 +137,7 @@ def run():
 						# Show the classification report
 						res = classification_report_imbalanced(y_test, y_pred,
 						                                       digits=4)
-						identificador = filename + '_' + name_encoder + '_'+ name_oversampling + '_' + name
+						identificador = filename + '_' + name_encoder + '_' + name_oversampling + '_' + name
 						aux = res.split()
 						score = aux[-7:-1]
 						df.at[i, 'ID'] = identificador
@@ -102,8 +145,12 @@ def run():
 						df.at[i, 'FOLD'] = fold
 						df.at[i, 'PREPROC'] = name_oversampling
 						df.at[i, 'ALGORITHM'] = name
-						df.at[i, 'ORDER'] = 'solid_angle'
-						df.at[i, 'ALPHA'] = 7.0
+						if name_oversampling == 'dtosmote':
+							df.at[i, 'ORDER'] = 'solid_angle'
+							df.at[i, 'ALPHA'] = 7.0
+						else:
+							df.at[i, 'ORDER'] = 'NONE'
+							df.at[i, 'ALPHA'] = 'NONE'
 						df.at[i, 'ENCODER'] = name_encoder
 						df.at[i, 'PRE'] = score[0]
 						df.at[i, 'REC'] = score[1]
@@ -112,4 +159,5 @@ def run():
 						df.at[i, 'GEO'] = score[4]
 						df.at[i, 'IBA'] = score[5]
 						i = i + 1
-					df.to_csv('./../output/encoder_results.csv',index=False)
+					df.to_csv('./../output/encoder_results.csv', index=False)
+			fold = fold + 1
