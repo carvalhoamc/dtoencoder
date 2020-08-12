@@ -1,6 +1,8 @@
 import glob
 import os
+from collections import Counter
 
+import category_encoders as ce
 from category_encoders import OneHotEncoder, TargetEncoder, OrdinalEncoder
 from category_encoders.utils import is_category
 from imblearn.metrics import classification_report_imbalanced
@@ -14,8 +16,8 @@ from imblearn import pipeline as pl
 
 from classifiers import classifiers
 from datasets import datasets
-from encoders import encoders
 from oversampling import oversampling_methods
+from datasets import dict_categorical_cols
 
 
 def get_obj_cols(df):
@@ -37,8 +39,10 @@ def run():
 		fname = './../input/' + filename + '.csv'
 		print(fname)
 		df_data = pd.read_csv(fname, header=None)
-		drop_na_col = True,  ## auto drop columns with nan's (bool)
-		drop_na_row = True,  ## auto drop rows with nan's (bool)
+		drop_na_col = True  ## auto drop columns with nan's (bool)
+		drop_na_row = True  ## auto drop rows with nan's (bool)
+		drop_null_col = True
+		drop_null_row = True
 		## pre-process missing values
 		if bool(drop_na_col) == True:
 			df_data = df_data.dropna(axis=1)  ## drop columns with nan's
@@ -51,13 +55,55 @@ def run():
 			raise ValueError("cannot proceed: data cannot contain NaN values")
 		
 		print(df_data.shape)
+		encoders = {'BackwardDifference': ce.BackwardDifferenceEncoder(
+				cols=dict_categorical_cols[
+					filename]),
+				'BaseNEncoder': ce.BaseNEncoder(cols=dict_categorical_cols[
+					filename]),
+				'BinaryEncoder': ce.BinaryEncoder(cols=dict_categorical_cols[
+					filename]),
+				'CatBoostEncoder': ce.CatBoostEncoder(
+						cols=dict_categorical_cols[
+							filename]),
+				#'CountEncoder': ce.CountEncoder(cols=dict_categorical_cols[
+				#	filename]),
+				'GLMMEncoder': ce.GLMMEncoder(cols=dict_categorical_cols[
+					filename]),
+				'HashingEncoder': ce.HashingEncoder(cols=dict_categorical_cols[
+					filename]),
+				'HelmertEncoder': ce.HelmertEncoder(cols=dict_categorical_cols[
+					filename]),
+				'JamesSteinEncoder': ce.JamesSteinEncoder(
+						cols=dict_categorical_cols[
+							filename]),
+				'LeaveOneOutEncoder': ce.LeaveOneOutEncoder(
+						cols=dict_categorical_cols[
+							filename]),
+				'MEstimateEncoder': ce.MEstimateEncoder(
+						cols=dict_categorical_cols[
+							filename]),
+				'OneHotEncoder': ce.OneHotEncoder(cols=dict_categorical_cols[
+					filename]),
+				'OrdinalEncoder': ce.OrdinalEncoder(cols=dict_categorical_cols[
+					filename]),
+				'SumEncoder': ce.SumEncoder(cols=dict_categorical_cols[
+					filename]),
+				#'PolynomialEncoder': ce.PolynomialEncoder(
+				#		cols=dict_categorical_cols[
+				#			filename]),
+				'TargetEncoder': ce.TargetEncoder(cols=dict_categorical_cols[
+					filename]),
+				'WOEEncoder': ce.WOEEncoder(cols=dict_categorical_cols[
+					filename])}
 		
-		categorical_cols = get_obj_cols(df_data.iloc[:, 0:-1])
+		# categorical_cols = get_obj_cols(df_data.iloc[:, 0:-1])
 		Y = np.array(df_data.iloc[:, -1])
 		# X = normalize(np.array(df_data.iloc[:, 0:-1]))
 		X = np.array(df_data.iloc[:, 0:-1])
 		le = LabelEncoder()
 		Y = le.fit_transform(Y)
+		
+		print(Counter(Y))
 		
 		skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=40)
 		fold = 0
@@ -71,7 +117,7 @@ def run():
 			for name, clf in classifiers.items():
 				print('Ogirinal')
 				print(name)
-				target = OneHotEncoder(cols=categorical_cols)
+				target = OneHotEncoder(cols=dict_categorical_cols[filename])
 				encoded_train = target.fit_transform(X_train, y_train)
 				encoded_test = target.transform(X_test, y_test)
 				clf.fit(encoded_train, y_train)
@@ -100,8 +146,9 @@ def run():
 				print('SMOTENC')
 				
 				smotenc = pl.make_pipeline(
-						SMOTENC(categorical_features=categorical_cols), clf)
-				#y_pred = smotenc.fit(X_train, y_train).predict(X_test)
+						SMOTENC(categorical_features=dict_categorical_cols[
+							filename]), clf)
+				# y_pred = smotenc.fit(X_train, y_train).predict(X_test)
 				y_pred = smotenc.fit(encoded_train, y_train).predict(
 						encoded_test)
 				res = classification_report_imbalanced(y_test, y_pred,
