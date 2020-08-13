@@ -65,7 +65,7 @@ def run():
 				'CatBoostEncoder': ce.CatBoostEncoder(
 						cols=dict_categorical_cols[
 							filename]),
-				#'CountEncoder': ce.CountEncoder(cols=dict_categorical_cols[
+				# 'CountEncoder': ce.CountEncoder(cols=dict_categorical_cols[
 				#	filename]),
 				'GLMMEncoder': ce.GLMMEncoder(cols=dict_categorical_cols[
 					filename]),
@@ -88,13 +88,14 @@ def run():
 					filename]),
 				'SumEncoder': ce.SumEncoder(cols=dict_categorical_cols[
 					filename]),
-				#'PolynomialEncoder': ce.PolynomialEncoder(
+				# 'PolynomialEncoder': ce.PolynomialEncoder(
 				#		cols=dict_categorical_cols[
 				#			filename]),
 				'TargetEncoder': ce.TargetEncoder(cols=dict_categorical_cols[
 					filename]),
-				'WOEEncoder': ce.WOEEncoder(cols=dict_categorical_cols[
-					filename])}
+				# 'WOEEncoder': ce.WOEEncoder(cols=dict_categorical_cols[
+				#	filename])
+		}
 		
 		# categorical_cols = get_obj_cols(df_data.iloc[:, 0:-1])
 		Y = np.array(df_data.iloc[:, -1])
