@@ -169,10 +169,6 @@ def run(onlyDTO=False):
 							df.at[i, 'FOLD'] = fold
 							df.at[i, 'PREPROC'] = name_oversampling
 							df.at[i, 'ALGORITHM'] = name
-							#if name_oversampling == 'dtosmote':
-							#	df.at[i, 'ORDER'] = 'aspect_ratio'
-							#	df.at[i, 'ALPHA'] = 7.0
-							#else:
 							df.at[i, 'ORDER'] = 'NONE'
 							df.at[i, 'ALPHA'] = 'NONE'
 							df.at[i, 'ENCODER'] = name_encoder
@@ -184,8 +180,7 @@ def run(onlyDTO=False):
 							df.at[i, 'IBA'] = score[5]
 							i = i + 1
 						df.to_csv('./../output/encoder_results.csv', index=False)
-				fold = fold + 1
-				
+						
 			else:
 				for o in order:
 					for a in alphas:

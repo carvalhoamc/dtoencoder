@@ -29,7 +29,7 @@ class Performance:
 		                            'ALPHA', 'PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA'],
 		                   index=np.arange(0, int(t.shape[0] / 5)))
 		
-		df_temp = df.groupby(by=['ENCODER', 'DATASET', 'PREPROC', 'ALGORITHM'])
+		df_temp = df.groupby(by=['ENCODER', 'DATASET', 'PREPROC', 'ALGORITHM','PREPROC','ORDER','ALPHA'])
 		idx = dfr.index.values
 		i = idx[0]
 		for name, group in df_temp:
@@ -47,7 +47,7 @@ class Performance:
 			dfr.at[i, 'GEO'] = group['GEO'].mean()
 			dfr.at[i, 'IBA'] = group['IBA'].mean()
 			i = i + 1
-		
+			
 		print('Total lines in a file: ', i)
 		dfr.to_csv(input_dir + 'dto_encoders_average_results_' + str(release) + '.csv', index=False)
 	

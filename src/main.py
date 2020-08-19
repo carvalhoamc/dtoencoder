@@ -13,7 +13,7 @@ def timer(start, end):
 
 def run_experiments():
 	start = time.time()
-	run(onlyDTO=True)  # if True only DTO runs
+	run(onlyDTO=False)  # if True only DTO runs
 	end = time.time()
 	print("Total Execution Time : ")
 	timer(start, end)
