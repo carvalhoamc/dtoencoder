@@ -20,7 +20,8 @@ def run_experiments():
 
 def run_analisys(r):
 	analisys = Performance()
-	analisys.average_results(output_dir + 'encoder_results_' + r + '.csv',  release=r)
+	#analisys.average_results(output_dir + 'encoder_results_' + r + '.csv',  release=r)
+	analisys.run_rank_choose_parameters(input_dir + 'dto_encoders_average_results_' + r + '.csv',release=r)
 	
 
 

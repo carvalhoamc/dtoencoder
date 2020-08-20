@@ -3,11 +3,27 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from classifiers import classifiers_list
-
+from datasets import datasets
+from oversampling import order, alphas
 
 output_dir = './../output/'
 rank_dir = './../rank/'
 input_dir = './../input/'
+
+encoders = ['BaseNEncoder',
+            'BinaryEncoder',
+            'CatBoostEncoder',
+            'GLMMEncoder',
+            'HashingEncoder',
+            'HelmertEncoder',
+            'JamesSteinEncoder',
+            'LeaveOneOutEncoder',
+            'MEstimateEncoder',
+            'OneHotEncoder',
+            'OrdinalEncoder',
+            'SumEncoder',
+            'TargetEncoder'
+            ]
 
 
 class Performance:
@@ -19,7 +35,6 @@ class Performance:
 		'''
 		Calculates average results
 		:param rfile: filename with results
-		:param kind: biclass or multiclass
 		:return: avarege_results in another file
 		'''
 		
@@ -29,7 +44,7 @@ class Performance:
 		                            'ALPHA', 'PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA'],
 		                   index=np.arange(0, int(t.shape[0] / 5)))
 		
-		df_temp = df.groupby(by=['ENCODER', 'DATASET', 'PREPROC', 'ALGORITHM','PREPROC','ORDER','ALPHA'])
+		df_temp = df.groupby(by=['ENCODER', 'DATASET', 'PREPROC', 'ALGORITHM', 'PREPROC', 'ORDER', 'ALPHA'])
 		idx = dfr.index.values
 		i = idx[0]
 		for name, group in df_temp:
@@ -47,11 +62,11 @@ class Performance:
 			dfr.at[i, 'GEO'] = group['GEO'].mean()
 			dfr.at[i, 'IBA'] = group['IBA'].mean()
 			i = i + 1
-			
+		
 		print('Total lines in a file: ', i)
 		dfr.to_csv(input_dir + 'dto_encoders_average_results_' + str(release) + '.csv', index=False)
 	
-	def rank_by_algorithm(self, df, kind, order, alpha, release, smote=False):
+	def rank_by_algorithm(self, df, order, alpha, encoder, release, smote=False):
 		'''
 		Calcula rank
 		:param df:
@@ -60,81 +75,82 @@ class Performance:
 		:param delaunay_type:
 		:return:
 		'''
-		biclass_measures = ['PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA', 'AUC']
-		multiclass_measures = ['PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA']
+		measures = ['PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA']
 		
 		df_table = pd.DataFrame(
-				columns=['DATASET', 'ALGORITHM', 'ORIGINAL', 'RANK_ORIGINAL', 'SMOTE', 'RANK_SMOTE', 'SMOTE_SVM',
-				         'RANK_SMOTE_SVM', 'BORDERLINE1', 'RANK_BORDERLINE1', 'BORDERLINE2', 'RANK_BORDERLINE2',
-				         'GEOMETRIC_SMOTE', 'RANK_GEOMETRIC_SMOTE', 'DELAUNAY', 'RANK_DELAUNAY', 'DELAUNAY_TYPE',
-				         'ALPHA', 'unit'])
+				columns=['ENCODER', 'DATASET', 'ALGORITHM', 'ORIGINAL', 'RANK_ORIGINAL', 'SMOTENC',
+				         'RANK_SMOTENC', 'SMOTE', 'RANK_SMOTE',
+				         'SMOTE_SVM', 'RANK_SMOTE_SVM', 'BORDERLINE1', 'RANK_BORDERLINE1', 'BORDERLINE2',
+				         'RANK_BORDERLINE2', 'GEOMETRIC_SMOTE', 'RANK_GEOMETRIC_SMOTE', 'DTO', 'RANK_DTO',
+				         'ORDER', 'ALPHA', 'UNIT'])
 		
 		df_temp = df.groupby(by=['ALGORITHM'])
 		for name, group in df_temp:
-			
 			group = group.reset_index()
 			group.drop('index', axis=1, inplace=True)
 			if smote == False:
-				df.to_csv(rank_dir + release + '_' + kind + '_' + order + '_' + str(alpha) + '.csv', index=False)
-			else:
-				df.to_csv(rank_dir + release + '_smote_' + kind + '_' + order + '_' + str(alpha) + '.csv', index=False)
+				df.to_csv(rank_dir + release + '_' + order + '_' + str(alpha) + '_' + encoder + '.csv', index=False)
+			# else:
+			#	df.to_csv(rank_dir + release + '_smote_' + kind + '_' + order + '_' + str(alpha) + '.csv', index=False)
 			
 			j = 0
-			if kind == 'biclass':
-				dataset = dataset_biclass
-				measures = biclass_measures
-			else:
-				dataset = dataset_multiclass
-				measures = multiclass_measures
-			
-			for d in dataset:
+			for d in datasets:
 				for m in measures:
+					print('name= ',name)
+					print('d= ', d)
+					print('m= ', m)
+					print('j= ', j)
+					
 					aux = group[group['DATASET'] == d]
 					aux = aux.reset_index()
 					df_table.at[j, 'DATASET'] = d
 					df_table.at[j, 'ALGORITHM'] = name
-					indice = aux.PREPROC[aux.PREPROC == '_train'].index.tolist()[0]
+					df_table.at[j, 'ENCODER'] = encoder
+					indice = aux.PREPROC[aux.PREPROC == 'original'].index.tolist()[0]
 					df_table.at[j, 'ORIGINAL'] = aux.at[indice, m]
-					indice = aux.PREPROC[aux.PREPROC == '_SMOTE'].index.tolist()[0]
+					indice = aux.PREPROC[aux.PREPROC == 'smotenc'].index.tolist()[0]
+					df_table.at[j, 'SMOTENC'] = aux.at[indice, m]
+					indice = aux.PREPROC[aux.PREPROC == 'smote'].index.tolist()[0]
 					df_table.at[j, 'SMOTE'] = aux.at[indice, m]
-					indice = aux.PREPROC[aux.PREPROC == '_smoteSVM'].index.tolist()[0]
+					indice = aux.PREPROC[aux.PREPROC == 'smoteSVM'].index.tolist()[0]
 					df_table.at[j, 'SMOTE_SVM'] = aux.at[indice, m]
-					indice = aux.PREPROC[aux.PREPROC == '_Borderline1'].index.tolist()[0]
+					indice = aux.PREPROC[aux.PREPROC == 'borderline1'].index.tolist()[0]
 					df_table.at[j, 'BORDERLINE1'] = aux.at[indice, m]
-					indice = aux.PREPROC[aux.PREPROC == '_Borderline2'].index.tolist()[0]
+					indice = aux.PREPROC[aux.PREPROC == 'borderline2'].index.tolist()[0]
 					df_table.at[j, 'BORDERLINE2'] = aux.at[indice, m]
-					indice = aux.PREPROC[aux.PREPROC == '_Geometric_SMOTE'].index.tolist()[0]
+					indice = aux.PREPROC[aux.PREPROC == 'geometric_smote'].index.tolist()[0]
 					df_table.at[j, 'GEOMETRIC_SMOTE'] = aux.at[indice, m]
 					indice = aux.PREPROC[aux.ORDER == order].index.tolist()[0]
-					df_table.at[j, 'DELAUNAY'] = aux.at[indice, m]
-					df_table.at[j, 'DELAUNAY_TYPE'] = order
+					df_table.at[j, 'DTO'] = aux.at[indice, m]
+					df_table.at[j, 'ORDER'] = order
 					df_table.at[j, 'ALPHA'] = alpha
-					df_table.at[j, 'unit'] = m
+					df_table.at[j, 'UNIT'] = m
 					j += 1
 			
-			df_pre = df_table[df_table['unit'] == 'PRE']
-			df_rec = df_table[df_table['unit'] == 'REC']
-			df_spe = df_table[df_table['unit'] == 'SPE']
-			df_f1 = df_table[df_table['unit'] == 'F1']
-			df_geo = df_table[df_table['unit'] == 'GEO']
-			df_iba = df_table[df_table['unit'] == 'IBA']
-			if kind == 'biclass':
-				df_auc = df_table[df_table['unit'] == 'AUC']
+			df_pre = df_table[df_table['UNIT'] == 'PRE']
+			df_rec = df_table[df_table['UNIT'] == 'REC']
+			df_spe = df_table[df_table['UNIT'] == 'SPE']
+			df_f1 = df_table[df_table['UNIT'] == 'F1']
+			df_geo = df_table[df_table['UNIT'] == 'GEO']
+			df_iba = df_table[df_table['UNIT'] == 'IBA']
 			
 			pre = df_pre[
-				['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE', 'DELAUNAY']]
+				['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
+				 'GEOMETRIC_SMOTE', 'DTO']]
 			rec = df_rec[
-				['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE', 'DELAUNAY']]
+				['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
+				 'GEOMETRIC_SMOTE', 'DTO']]
 			spe = df_spe[
-				['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE', 'DELAUNAY']]
-			f1 = df_f1[['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE', 'DELAUNAY']]
+				['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
+				 'GEOMETRIC_SMOTE', 'DTO']]
+			f1 = df_f1[['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
+			            'GEOMETRIC_SMOTE', 'DTO']]
 			geo = df_geo[
-				['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE', 'DELAUNAY']]
+				['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
+				 'GEOMETRIC_SMOTE', 'DTO']]
 			iba = df_iba[
-				['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE', 'DELAUNAY']]
-			if kind == 'biclass':
-				auc = df_auc[['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE',
-				              'DELAUNAY']]
+				['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
+				 'GEOMETRIC_SMOTE', 'DTO']]
 			
 			pre = pre.reset_index()
 			pre.drop('index', axis=1, inplace=True)
@@ -148,9 +164,6 @@ class Performance:
 			geo.drop('index', axis=1, inplace=True)
 			iba = iba.reset_index()
 			iba.drop('index', axis=1, inplace=True)
-			if kind == 'biclass':
-				auc = auc.reset_index()
-				auc.drop('index', axis=1, inplace=True)
 			
 			# calcula rank linha a linha
 			pre_rank = pre.rank(axis=1, ascending=False)
@@ -159,79 +172,72 @@ class Performance:
 			f1_rank = f1.rank(axis=1, ascending=False)
 			geo_rank = geo.rank(axis=1, ascending=False)
 			iba_rank = iba.rank(axis=1, ascending=False)
-			if kind == 'biclass':
-				auc_rank = auc.rank(axis=1, ascending=False)
 			
 			df_pre = df_pre.reset_index()
 			df_pre.drop('index', axis=1, inplace=True)
 			df_pre['RANK_ORIGINAL'] = pre_rank['ORIGINAL']
 			df_pre['RANK_SMOTE'] = pre_rank['SMOTE']
+			df_pre['RANK_SMOTENC'] = pre_rank['SMOTENC']
 			df_pre['RANK_SMOTE_SVM'] = pre_rank['SMOTE_SVM']
 			df_pre['RANK_BORDERLINE1'] = pre_rank['BORDERLINE1']
 			df_pre['RANK_BORDERLINE2'] = pre_rank['BORDERLINE2']
 			df_pre['RANK_GEOMETRIC_SMOTE'] = pre_rank['GEOMETRIC_SMOTE']
-			df_pre['RANK_DELAUNAY'] = pre_rank['DELAUNAY']
+			df_pre['RANK_DTO'] = pre_rank['DTO']
 			
 			df_rec = df_rec.reset_index()
 			df_rec.drop('index', axis=1, inplace=True)
 			df_rec['RANK_ORIGINAL'] = rec_rank['ORIGINAL']
+			df_rec['RANK_SMOTENC'] = rec_rank['SMOTENC']
 			df_rec['RANK_SMOTE'] = rec_rank['SMOTE']
 			df_rec['RANK_SMOTE_SVM'] = rec_rank['SMOTE_SVM']
 			df_rec['RANK_BORDERLINE1'] = rec_rank['BORDERLINE1']
 			df_rec['RANK_BORDERLINE2'] = rec_rank['BORDERLINE2']
 			df_rec['RANK_GEOMETRIC_SMOTE'] = rec_rank['GEOMETRIC_SMOTE']
-			df_rec['RANK_DELAUNAY'] = rec_rank['DELAUNAY']
+			df_rec['RANK_DTO'] = rec_rank['DTO']
 			
 			df_spe = df_spe.reset_index()
 			df_spe.drop('index', axis=1, inplace=True)
 			df_spe['RANK_ORIGINAL'] = spe_rank['ORIGINAL']
+			df_spe['RANK_SMOTENC'] = spe_rank['SMOTENC']
 			df_spe['RANK_SMOTE'] = spe_rank['SMOTE']
 			df_spe['RANK_SMOTE_SVM'] = spe_rank['SMOTE_SVM']
 			df_spe['RANK_BORDERLINE1'] = spe_rank['BORDERLINE1']
 			df_spe['RANK_BORDERLINE2'] = spe_rank['BORDERLINE2']
 			df_spe['RANK_GEOMETRIC_SMOTE'] = spe_rank['GEOMETRIC_SMOTE']
-			df_spe['RANK_DELAUNAY'] = spe_rank['DELAUNAY']
+			df_spe['RANK_DTO'] = spe_rank['DTO']
 			
 			df_f1 = df_f1.reset_index()
 			df_f1.drop('index', axis=1, inplace=True)
 			df_f1['RANK_ORIGINAL'] = f1_rank['ORIGINAL']
+			df_f1['RANK_SMOTENC'] = f1_rank['SMOTENC']
 			df_f1['RANK_SMOTE'] = f1_rank['SMOTE']
 			df_f1['RANK_SMOTE_SVM'] = f1_rank['SMOTE_SVM']
 			df_f1['RANK_BORDERLINE1'] = f1_rank['BORDERLINE1']
 			df_f1['RANK_BORDERLINE2'] = f1_rank['BORDERLINE2']
 			df_f1['RANK_GEOMETRIC_SMOTE'] = f1_rank['GEOMETRIC_SMOTE']
-			df_f1['RANK_DELAUNAY'] = f1_rank['DELAUNAY']
+			df_f1['RANK_DTO'] = f1_rank['DTO']
 			
 			df_geo = df_geo.reset_index()
 			df_geo.drop('index', axis=1, inplace=True)
 			df_geo['RANK_ORIGINAL'] = geo_rank['ORIGINAL']
+			df_geo['RANK_SMOTENC'] = geo_rank['SMOTENC']
 			df_geo['RANK_SMOTE'] = geo_rank['SMOTE']
 			df_geo['RANK_SMOTE_SVM'] = geo_rank['SMOTE_SVM']
 			df_geo['RANK_BORDERLINE1'] = geo_rank['BORDERLINE1']
 			df_geo['RANK_BORDERLINE2'] = geo_rank['BORDERLINE2']
 			df_geo['RANK_GEOMETRIC_SMOTE'] = geo_rank['GEOMETRIC_SMOTE']
-			df_geo['RANK_DELAUNAY'] = geo_rank['DELAUNAY']
+			df_geo['RANK_DTO'] = geo_rank['DTO']
 			
 			df_iba = df_iba.reset_index()
 			df_iba.drop('index', axis=1, inplace=True)
 			df_iba['RANK_ORIGINAL'] = iba_rank['ORIGINAL']
+			df_iba['RANK_SMOTENC'] = iba_rank['SMOTENC']
 			df_iba['RANK_SMOTE'] = iba_rank['SMOTE']
 			df_iba['RANK_SMOTE_SVM'] = iba_rank['SMOTE_SVM']
 			df_iba['RANK_BORDERLINE1'] = iba_rank['BORDERLINE1']
 			df_iba['RANK_BORDERLINE2'] = iba_rank['BORDERLINE2']
 			df_iba['RANK_GEOMETRIC_SMOTE'] = iba_rank['GEOMETRIC_SMOTE']
-			df_iba['RANK_DELAUNAY'] = iba_rank['DELAUNAY']
-			
-			if kind == 'biclass':
-				df_auc = df_auc.reset_index()
-				df_auc.drop('index', axis=1, inplace=True)
-				df_auc['RANK_ORIGINAL'] = auc_rank['ORIGINAL']
-				df_auc['RANK_SMOTE'] = auc_rank['SMOTE']
-				df_auc['RANK_SMOTE_SVM'] = auc_rank['SMOTE_SVM']
-				df_auc['RANK_BORDERLINE1'] = auc_rank['BORDERLINE1']
-				df_auc['RANK_BORDERLINE2'] = auc_rank['BORDERLINE2']
-				df_auc['RANK_GEOMETRIC_SMOTE'] = auc_rank['GEOMETRIC_SMOTE']
-				df_auc['RANK_DELAUNAY'] = auc_rank['DELAUNAY']
+			df_iba['RANK_DTO'] = iba_rank['DTO']
 			
 			# avarege rank
 			media_pre_rank = pre_rank.mean(axis=0)
@@ -240,8 +246,6 @@ class Performance:
 			media_f1_rank = f1_rank.mean(axis=0)
 			media_geo_rank = geo_rank.mean(axis=0)
 			media_iba_rank = iba_rank.mean(axis=0)
-			if kind == 'biclass':
-				media_auc_rank = auc_rank.mean(axis=0)
 			
 			media_pre_rank_file = media_pre_rank.reset_index()
 			media_pre_rank_file = media_pre_rank_file.sort_values(by=0)
@@ -261,237 +265,100 @@ class Performance:
 			media_iba_rank_file = media_iba_rank.reset_index()
 			media_iba_rank_file = media_iba_rank_file.sort_values(by=0)
 			
-			if kind == 'biclass':
-				media_auc_rank_file = media_auc_rank.reset_index()
-				media_auc_rank_file = media_auc_rank_file.sort_values(by=0)
-			
 			if smote == False:
-				
 				# Grava arquivos importantes
 				df_pre.to_csv(
-						rank_dir + release + '_' + kind + '_total_rank_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_total_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_pre.csv', index=False)
 				df_rec.to_csv(
-						rank_dir + release + '_' + kind + '_total_rank_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_total_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_rec.csv', index=False)
 				df_spe.to_csv(
-						rank_dir + release + '_' + kind + '_total_rank_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_total_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_spe.csv', index=False)
 				df_f1.to_csv(
-						rank_dir + release + '_' + kind + '_total_rank_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_total_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_f1.csv', index=False)
 				df_geo.to_csv(
-						rank_dir + release + '_' + kind + '_total_rank_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_total_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_geo.csv', index=False)
 				df_iba.to_csv(
-						rank_dir + release + '_' + kind + '_total_rank_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_total_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_iba.csv', index=False)
-				if kind == 'biclass':
-					df_auc.to_csv(
-							rank_dir + release + '_' + kind + '_total_rank_' + order + '_' + str(
-									alpha) + '_' + name + '_auc.csv',
-							index=False)
 				
 				media_pre_rank_file.to_csv(
-						rank_dir + release + '_' + 'media_rank_' + kind + '_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_' + 'media_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_pre.csv',
 						index=False)
 				media_rec_rank_file.to_csv(
-						rank_dir + release + '_media_rank_' + kind + '_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_media_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_rec.csv',
 						index=False)
 				media_spe_rank_file.to_csv(
-						rank_dir + release + '_media_rank_' + kind + '_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_media_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_spe.csv',
 						index=False)
 				media_f1_rank_file.to_csv(
-						rank_dir + release + '_media_rank_' + kind + '_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_media_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_f1.csv',
 						index=False)
 				media_geo_rank_file.to_csv(
-						rank_dir + release + '_media_rank_' + kind + '_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_media_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_geo.csv',
 						index=False)
 				media_iba_rank_file.to_csv(
-						rank_dir + release + '_media_rank_' + kind + '_' + order + '_' + str(
+						rank_dir + release + '_' + encoder + '_media_rank_' + order + '_' + str(
 								alpha) + '_' + name + '_iba.csv',
 						index=False)
-				if kind == 'biclass':
-					media_auc_rank_file.to_csv(
-							rank_dir + release + '_media_rank_' + kind + '_' + order + '_' + str(
-									alpha) + '_' + name + '_auc.csv',
-							index=False)
 				
 				delaunay_type = order + '_' + str(alpha)
 				
 				# grafico CD
-				identificadores = ['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE',
-				                   delaunay_type]
+				identificadores = ['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
+				                   'GEOMETRIC_SMOTE', 'dto_'+delaunay_type]
 				avranks = list(media_pre_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
+				cd = Orange.evaluation.compute_CD(avranks, len(datasets))
 				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
 				plt.savefig(
-						rank_dir + release + 'cd_' + '_' + kind + '_' + delaunay_type + '_' + name + '_pre.pdf')
+						rank_dir + release + '_' + encoder + 'cd_' + delaunay_type + '_' + name + '_pre.pdf')
 				plt.close()
 				
 				avranks = list(media_rec_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
+				cd = Orange.evaluation.compute_CD(avranks, len(datasets))
 				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
 				plt.savefig(
-						rank_dir + release + 'cd_' + '_' + kind + '_' + delaunay_type + '_' + name + '_rec.pdf')
+						rank_dir + release + '_' + encoder + 'cd_' + delaunay_type + '_' + name + '_rec.pdf')
 				plt.close()
 				
 				avranks = list(media_spe_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
+				cd = Orange.evaluation.compute_CD(avranks, len(datasets))
 				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
 				plt.savefig(
-						rank_dir + release + 'cd_' + '_' + kind + '_' + delaunay_type + '_' + name + '_spe.pdf')
+						rank_dir + release + '_' + encoder + 'cd_' + delaunay_type + '_' + name + '_spe.pdf')
 				plt.close()
 				
 				avranks = list(media_f1_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
+				cd = Orange.evaluation.compute_CD(avranks, len(datasets))
 				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-				plt.savefig(rank_dir + release + 'cd_' + '_' + kind + '_' + delaunay_type + '_' + name + '_f1.pdf')
+				plt.savefig(rank_dir + release + '_' + encoder + 'cd_' + delaunay_type + '_' + name + '_f1.pdf')
 				plt.close()
 				
 				avranks = list(media_geo_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
+				cd = Orange.evaluation.compute_CD(avranks, len(datasets))
 				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
 				plt.savefig(
-						rank_dir + release + 'cd_' + '_' + kind + '_' + delaunay_type + '_' + name + '_geo.pdf')
+						rank_dir + release + '_' + encoder + 'cd_' + delaunay_type + '_' + name + '_geo.pdf')
 				plt.close()
 				
 				avranks = list(media_iba_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
+				cd = Orange.evaluation.compute_CD(avranks, len(datasets))
 				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
 				plt.savefig(
-						rank_dir + release + 'cd_' + '_' + kind + '_' + delaunay_type + '_' + name + '_iba.pdf')
+						rank_dir + release + '_' + encoder + 'cd_' + delaunay_type + '_' + name + '_iba.pdf')
 				plt.close()
 				
-				if kind == 'biclass':
-					avranks = list(media_auc_rank)
-					cd = Orange.evaluation.compute_CD(avranks, len(dataset))
-					Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-					plt.savefig(
-							rank_dir + release + 'cd_' + '_' + kind + '_' + delaunay_type + '_' + name + '_auc.pdf')
-					plt.close()
-				
-				print('Delaunay Type= ', delaunay_type)
+				print('DTO = ', delaunay_type)
 				print('Algorithm= ', name)
-			
-			
-			else:
-				# Grava arquivos importantes
-				df_pre.to_csv(
-						rank_dir + release + '_smote_' + kind + '_total_rank_' + order + '_' + str(
-								alpha) + '_' + name + '_pre.csv', index=False)
-				df_rec.to_csv(
-						rank_dir + release + '_smote_' + kind + '_total_rank_' + order + '_' + str(
-								alpha) + '_' + name + '_rec.csv', index=False)
-				df_spe.to_csv(
-						rank_dir + release + '_smote_' + kind + '_total_rank_' + order + '_' + str(
-								alpha) + '_' + name + '_spe.csv', index=False)
-				df_f1.to_csv(
-						rank_dir + release + '_smote_' + kind + '_total_rank_' + order + '_' + str(
-								alpha) + '_' + name + '_f1.csv', index=False)
-				df_geo.to_csv(
-						rank_dir + release + '_smote_' + kind + '_total_rank_' + order + '_' + str(
-								alpha) + '_' + name + '_geo.csv', index=False)
-				df_iba.to_csv(
-						rank_dir + release + '_smote_' + kind + '_total_rank_' + order + '_' + str(
-								alpha) + '_' + name + '_iba.csv', index=False)
-				if kind == 'biclass':
-					df_auc.to_csv(
-							rank_dir + release + '_smote_' + kind + '_total_rank_' + order + '_' + str(
-									alpha) + '_' + name + '_auc.csv',
-							index=False)
-				
-				media_pre_rank_file.to_csv(
-						rank_dir + release + '_smote_media_rank_' + kind + '_' + order + '_' + str(
-								alpha) + '_' + name + '_pre.csv',
-						index=False)
-				media_rec_rank_file.to_csv(
-						rank_dir + release + '_smote__media_rank_' + kind + '_' + order + '_' + str(
-								alpha) + '_' + name + '_rec.csv',
-						index=False)
-				media_spe_rank_file.to_csv(
-						rank_dir + release + 'smote__media_rank_' + kind + '_' + order + '_' + str(
-								alpha) + '_' + name + '_spe.csv',
-						index=False)
-				media_f1_rank_file.to_csv(
-						rank_dir + release + 'smote__media_rank_' + kind + '_' + order + '_' + str(
-								alpha) + '_' + name + '_f1.csv',
-						index=False)
-				media_geo_rank_file.to_csv(
-						rank_dir + release + 'smote__media_rank_' + kind + '_' + order + '_' + str(
-								alpha) + '_' + name + '_geo.csv',
-						index=False)
-				media_iba_rank_file.to_csv(
-						rank_dir + release + 'smote__media_rank_' + kind + '_' + order + '_' + str(
-								alpha) + '_' + name + '_iba.csv',
-						index=False)
-				if kind == 'biclass':
-					media_auc_rank_file.to_csv(
-							rank_dir + release + 'smote__media_rank_' + kind + '_' + order + '_' + str(
-									alpha) + '_' + name + '_auc.csv',
-							index=False)
-				
-				delaunay_type = order + '_' + str(alpha)
-				
-				# grafico CD
-				identificadores = ['ORIGINAL', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2', 'GEOMETRIC_SMOTE',
-				                   delaunay_type]
-				avranks = list(media_pre_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
-				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-				plt.savefig(
-						rank_dir + release + 'cd_smote' + '_' + kind + '_' + delaunay_type + '_' + name + '_pre.pdf')
-				plt.close()
-				
-				avranks = list(media_rec_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
-				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-				plt.savefig(
-						rank_dir + release + 'cd_smote' + '_' + kind + '_' + delaunay_type + '_' + name + '_rec.pdf')
-				plt.close()
-				
-				avranks = list(media_spe_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
-				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-				plt.savefig(
-						rank_dir + release + 'cd_smote' + '_' + kind + '_' + delaunay_type + '_' + name + '_spe.pdf')
-				plt.close()
-				
-				avranks = list(media_f1_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
-				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-				plt.savefig(rank_dir + release + 'cd_smote' + '_' + kind + '_' + delaunay_type + '_' + name + '_f1.pdf')
-				plt.close()
-				
-				avranks = list(media_geo_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
-				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-				plt.savefig(
-						rank_dir + release + 'cd_smote' + '_' + kind + '_' + delaunay_type + '_' + name + '_geo.pdf')
-				plt.close()
-				
-				avranks = list(media_iba_rank)
-				cd = Orange.evaluation.compute_CD(avranks, len(dataset))
-				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-				plt.savefig(
-						rank_dir + release + 'cd_smote' + '_' + kind + '_' + delaunay_type + '_' + name + '_iba.pdf')
-				plt.close()
-				
-				if kind == 'biclass':
-					avranks = list(media_auc_rank)
-					cd = Orange.evaluation.compute_CD(avranks, len(dataset))
-					Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
-					plt.savefig(
-							rank_dir + release + 'cd_smote' + '_' + kind + '_' + delaunay_type + '_' + name + '_auc.pdf')
-					plt.close()
-				
-				print('SMOTE Delaunay Type= ', delaunay_type)
-				print('SMOTE Algorithm= ', name)
 	
 	def rank_dto_by(self, geometry, kind, release, smote=False):
 		if kind == 'biclass':
@@ -907,22 +774,29 @@ class Performance:
 			plt.close()
 			df_mean.to_csv(output_dir + kind + '_pic_average_auc.csv', index=False)
 	
-	def run_rank_choose_parameters(self, filename, kind, release):
+	def run_rank_choose_parameters(self, filename, release):
 		df_best_dto = pd.read_csv(filename)
-		df_B1 = df_best_dto[df_best_dto['PREPROC'] == '_Borderline1'].copy()
-		df_B2 = df_best_dto[df_best_dto['PREPROC'] == '_Borderline2'].copy()
-		df_GEO = df_best_dto[df_best_dto['PREPROC'] == '_Geometric_SMOTE'].copy()
-		df_SMOTE = df_best_dto[df_best_dto['PREPROC'] == '_SMOTE'].copy()
-		df_SMOTEsvm = df_best_dto[df_best_dto['PREPROC'] == '_smoteSVM'].copy()
-		df_original = df_best_dto[df_best_dto['PREPROC'] == '_train'].copy()
-		
-		for o in order:
-			for a in alphas:
-				GEOMETRY = '_delaunay_' + o + '_' + str(a)
-				df_dto = df_best_dto[df_best_dto['PREPROC'] == GEOMETRY].copy()
-				df = pd.concat([df_B1, df_B2, df_GEO, df_SMOTE, df_SMOTEsvm, df_original, df_dto])
-				self.rank_by_algorithm(df, kind, o, str(a), release)
-				self.rank_dto_by(o + '_' + str(a), kind, release)
+		for enc in encoders:
+			df_B1 = df_best_dto[df_best_dto['PREPROC'] == 'borderline1'].copy()
+			df_B1 = df_B1[df_B1['ENCODER'] == enc].copy()
+			df_B2 = df_best_dto[df_best_dto['PREPROC'] == 'borderline2'].copy()
+			df_B2 = df_B2[df_B2['ENCODER'] == enc].copy()
+			df_GEO = df_best_dto[df_best_dto['PREPROC'] == 'geometric_smote'].copy()
+			df_GEO = df_GEO[df_GEO['ENCODER'] == enc].copy()
+			df_SMOTE = df_best_dto[df_best_dto['PREPROC'] == 'smote'].copy()
+			df_SMOTE = df_SMOTE[df_SMOTE['ENCODER'] == enc].copy()
+			df_SMOTEsvm = df_best_dto[df_best_dto['PREPROC'] == 'smoteSVM'].copy()
+			df_SMOTEsvm = df_SMOTEsvm[df_SMOTEsvm['ENCODER'] == enc].copy()
+			df_original = df_best_dto[df_best_dto['PREPROC'] == 'original'].copy()
+			df_nc = df_best_dto[df_best_dto['PREPROC'] == 'smotenc'].copy()
+			for o in order:
+				for a in alphas:
+						df_dto = df_best_dto[df_best_dto['ORDER'] == o].copy()
+						df_dto1 = df_dto[df_dto['ALPHA'] == str(a)].copy()
+						df_dto2 = df_dto1[df_dto1['ENCODER'] == enc].copy()
+						df = pd.concat([df_B1, df_B2, df_GEO, df_SMOTE, df_SMOTEsvm, df_original, df_dto2, df_nc])
+						self.rank_by_algorithm(df, o, str(a), enc, release)
+						#self.rank_dto_by(o + '_' + str(a), kind, release)
 	
 	def run_global_rank(self, filename, kind, release):
 		df_best_dto = pd.read_csv(filename)

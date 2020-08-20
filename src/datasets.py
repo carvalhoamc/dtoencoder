@@ -1,15 +1,15 @@
 datasets = [
-		#'abalone-3_vs_11',  # ok
-		#'kddcup-land_vs_portsweep',  # ok
-		#'dataset_31_credit-g',  # ok
-		#'dresses-sales',  # ok
-		#'dermatology',  # ok
-		#'thyroid-hypothyroid',  # ok
+		'abalone-3_vs_11',  #
+		'kddcup-land_vs_portsweep',  #
+		'dataset_31_credit-g',  #
+		'dresses-sales',  #
+		'dermatology',  #
+		'thyroid-hypothyroid',  #
 		#'acute-inflammations-nephritis',
-		#'credit-approval',  # ok
-		#'horse-colic-surgical',  # ok
-		#aba'heart',  # ok
-		'hepatitis',  # ok
+		'credit-approval',  #
+		'horse-colic-surgical',  #
+		'heart',  #
+		'hepatitis',  #
 
 ]
 
