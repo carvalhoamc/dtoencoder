@@ -79,10 +79,9 @@ class Performance:
 		
 		df_table = pd.DataFrame(
 				columns=['ENCODER', 'DATASET', 'ALGORITHM', 'ORIGINAL', 'RANK_ORIGINAL', 'SMOTENC',
-				         'RANK_SMOTENC', 'SMOTE', 'RANK_SMOTE',
-				         'SMOTE_SVM', 'RANK_SMOTE_SVM', 'BORDERLINE1', 'RANK_BORDERLINE1', 'BORDERLINE2',
-				         'RANK_BORDERLINE2', 'GEOMETRIC_SMOTE', 'RANK_GEOMETRIC_SMOTE', 'DTO', 'RANK_DTO',
-				         'ORDER', 'ALPHA', 'UNIT'])
+				         'RANK_SMOTENC', 'SMOTE', 'RANK_SMOTE','SMOTE_SVM', 'RANK_SMOTE_SVM', 'BORDERLINE1',
+				         'RANK_BORDERLINE1', 'BORDERLINE2','RANK_BORDERLINE2', 'GEOMETRIC_SMOTE',
+				         'RANK_GEOMETRIC_SMOTE', 'DTO', 'RANK_DTO','ORDER', 'ALPHA', 'UNIT'])
 		
 		df_temp = df.groupby(by=['ALGORITHM'])
 		for name, group in df_temp:
