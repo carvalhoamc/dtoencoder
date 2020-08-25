@@ -470,7 +470,6 @@ class Performance:
 					if m == '_iba':
 						measure = 'IBA'
 					
-					
 					df_alpha_all[o + '_' + measure] = df_alpha_variations_rank['AVARAGE_RANK'].copy()
 					
 					fig, ax = plt.subplots()
@@ -484,8 +483,8 @@ class Performance:
 					plt.show()
 					plt.close()
 			
-		# figure(num=None, figsize=(10, 10), dpi=800, facecolor='w', edgecolor='k')
-		
+			# figure(num=None, figsize=(10, 10), dpi=800, facecolor='w', edgecolor='k')
+			
 			fig, ax = plt.subplots(figsize=(10, 7))
 			ax.set_title('DTO AVARAGE RANK\n ' + '\nMEASURE = GEO', fontsize=5)
 			ax.set_xlabel('Alpha')
@@ -497,7 +496,6 @@ class Performance:
 			
 			ax.plot(t1, ft1, color='tab:blue', marker='o', label='aspect_ratio')
 			ax.plot(t2, ft2, color='tab:red', marker='o', label='solid_angle')
-			
 			
 			leg = ax.legend(loc='upper right')
 			leg.get_frame().set_alpha(0.5)
@@ -521,7 +519,6 @@ class Performance:
 			ax.plot(t1, ft1, color='tab:blue', marker='o', label='aspect_ratio')
 			ax.plot(t2, ft2, color='tab:red', marker='o', label='solid_angle')
 			
-			
 			leg = ax.legend(loc='upper right')
 			leg.get_frame().set_alpha(0.5)
 			plt.xticks(range(12))
@@ -530,165 +527,90 @@ class Performance:
 			plt.close()
 			df_alpha_all.to_csv(output_dir + release + '_' + enc + '_pic_all_iba.csv', index=False)
 	
-	def best_alpha(self):
+	def best_alpha_geometry(self):
 		# Best alpha calculation
-		# GEO
-		df1 = pd.read_csv(output_dir + 'v1' + '_' + kind + '_pic_all_geo.csv')
-		df2 = pd.read_csv(output_dir + 'v2' + '_' + kind + '_pic_all_geo.csv')
-		df3 = pd.read_csv(output_dir + 'v3' + '_' + kind + '_pic_all_geo.csv')
+		# TODO
+		df = pd.DataFrame(columns=['alphas', 'aspect_ratio_GEO', 'solid_angle_GEO', 'aspect_ratio_IBA',
+		                           'solid_angle_IBA', 'ENCODER'])
+		for enc in encoders:
+			df1 = pd.read_csv(output_dir + 'v1' + '_' + enc + '_pic_all_geo.csv')
+			df1['ENCODER'] = enc
+			df = pd.concat([df, df1])
 		
-		df = pd.concat([df1,df2,df3])
 		
-		if kind == 'biclass':
-			col = ['area_GEO', 'volume_GEO', 'area_volume_ratio_GEO',
-			       'edge_ratio_GEO', 'radius_ratio_GEO', 'aspect_ratio_GEO',
-			       'max_solid_angle_GEO', 'min_solid_angle_GEO', 'solid_angle_GEO',
-			       'area_IBA', 'volume_IBA', 'area_volume_ratio_IBA', 'edge_ratio_IBA',
-			       'radius_ratio_IBA', 'aspect_ratio_IBA', 'max_solid_angle_IBA',
-			       'min_solid_angle_IBA', 'solid_angle_IBA', 'area_AUC', 'volume_AUC',
-			       'area_volume_ratio_AUC', 'edge_ratio_AUC', 'radius_ratio_AUC',
-			       'aspect_ratio_AUC', 'max_solid_angle_AUC', 'min_solid_angle_AUC',
-			       'solid_angle_AUC']
-		else:
-			col = ['area_GEO', 'volume_GEO',
-			       'area_volume_ratio_GEO', 'edge_ratio_GEO', 'radius_ratio_GEO',
-			       'aspect_ratio_GEO', 'max_solid_angle_GEO', 'min_solid_angle_GEO',
-			       'solid_angle_GEO', 'area_IBA', 'volume_IBA', 'area_volume_ratio_IBA',
-			       'edge_ratio_IBA', 'radius_ratio_IBA', 'aspect_ratio_IBA',
-			       'max_solid_angle_IBA', 'min_solid_angle_IBA', 'solid_angle_IBA']
-		df_mean = pd.DataFrame()
-		df_mean['alphas'] = df1.alphas
-		for c in col:
-			for i in np.arange(0, df1.shape[0]):
-				df_mean.loc[i, c] = (df1.loc[i, c] + df2.loc[i, c] + df3.loc[i, c]) / 3.0
 		
-		fig, ax = plt.subplots(figsize=(10, 7))
-		ax.set_title('DTO AVARAGE RANK\n ' + '\nMEASURE = GEO', fontsize=5)
-		ax.set_xlabel('Alpha')
-		ax.set_ylabel('Rank')
-		t1 = df_mean['alphas']
-		t2 = df_mean['alphas']
-		t3 = df_mean['alphas']
-		t4 = df_mean['alphas']
-		t5 = df_mean['alphas']
-		t6 = df_mean['alphas']
-		t7 = df_mean['alphas']
-		t8 = df_mean['alphas']
-		t9 = df_mean['alphas']
-		
-		ft1 = df_mean['area_GEO']
-		ft2 = df_mean['volume_GEO']
-		ft3 = df_mean['area_volume_ratio_GEO']
-		ft4 = df_mean['edge_ratio_GEO']
-		ft5 = df_mean['radius_ratio_GEO']
-		ft6 = df_mean['aspect_ratio_GEO']
-		ft7 = df_mean['max_solid_angle_GEO']
-		ft8 = df_mean['min_solid_angle_GEO']
-		ft9 = df_mean['solid_angle_GEO']
-		
-		ax.plot(t1, ft1, color='tab:blue', marker='o', label='area')
-		ax.plot(t2, ft2, color='tab:red', marker='o', label='volume')
-		ax.plot(t3, ft3, color='tab:green', marker='o', label='area_volume_ratio')
-		ax.plot(t4, ft4, color='tab:orange', marker='o', label='edge_ratio')
-		ax.plot(t5, ft5, color='tab:olive', marker='o', label='radius_ratio')
-		ax.plot(t6, ft6, color='tab:purple', marker='o', label='aspect_ratio')
-		ax.plot(t7, ft7, color='tab:brown', marker='o', label='max_solid_angle')
-		ax.plot(t8, ft8, color='tab:pink', marker='o', label='min_solid_angle')
-		ax.plot(t9, ft9, color='tab:gray', marker='o', label='solid_angle')
-		
-		leg = ax.legend(loc='upper right')
-		leg.get_frame().set_alpha(0.5)
-		plt.xticks(range(12))
-		plt.savefig(output_dir + kind + '_pic_average_geo.png', dpi=800)
-		plt.show()
-		plt.close()
-		df_mean.to_csv(output_dir + kind + '_pic_average_geo.csv', index=False)
-		
-		###################
-		fig, ax = plt.subplots(figsize=(10, 7))
-		ax.set_title('DTO AVARAGE RANK\n ' + '\nMEASURE = IBA', fontsize=5)
-		ax.set_xlabel('Alpha')
-		ax.set_ylabel('Rank')
-		t1 = df_mean['alphas']
-		t2 = df_mean['alphas']
-		t3 = df_mean['alphas']
-		t4 = df_mean['alphas']
-		t5 = df_mean['alphas']
-		t6 = df_mean['alphas']
-		t7 = df_mean['alphas']
-		t8 = df_mean['alphas']
-		t9 = df_mean['alphas']
-		
-		ft1 = df_mean['area_IBA']
-		ft2 = df_mean['volume_IBA']
-		ft3 = df_mean['area_volume_ratio_IBA']
-		ft4 = df_mean['edge_ratio_IBA']
-		ft5 = df_mean['radius_ratio_IBA']
-		ft6 = df_mean['aspect_ratio_IBA']
-		ft7 = df_mean['max_solid_angle_IBA']
-		ft8 = df_mean['min_solid_angle_IBA']
-		ft9 = df_mean['solid_angle_IBA']
-		
-		ax.plot(t1, ft1, color='tab:blue', marker='o', label='area')
-		ax.plot(t2, ft2, color='tab:red', marker='o', label='volume')
-		ax.plot(t3, ft3, color='tab:green', marker='o', label='area_volume_ratio')
-		ax.plot(t4, ft4, color='tab:orange', marker='o', label='edge_ratio')
-		ax.plot(t5, ft5, color='tab:olive', marker='o', label='radius_ratio')
-		ax.plot(t6, ft6, color='tab:purple', marker='o', label='aspect_ratio')
-		ax.plot(t7, ft7, color='tab:brown', marker='o', label='max_solid_angle')
-		ax.plot(t8, ft8, color='tab:pink', marker='o', label='min_solid_angle')
-		ax.plot(t9, ft9, color='tab:gray', marker='o', label='solid_angle')
-		
-		leg = ax.legend(loc='upper right')
-		leg.get_frame().set_alpha(0.5)
-		plt.xticks(range(12))
-		plt.savefig(output_dir + kind + '_pic_average_iba.png', dpi=800)
-		plt.show()
-		plt.close()
-		df_mean.to_csv(output_dir + kind + '_pic_average_iba.csv', index=False)
-		
-		if kind == 'biclass':
-			fig, ax = plt.subplots(figsize=(10, 7))
-			ax.set_title('DTO AVARAGE RANK\n ' + '\nMEASURE = AUC', fontsize=5)
-			ax.set_xlabel('Alpha')
-			ax.set_ylabel('Rank')
-			t1 = df_mean['alphas']
-			t2 = df_mean['alphas']
-			t3 = df_mean['alphas']
-			t4 = df_mean['alphas']
-			t5 = df_mean['alphas']
-			t6 = df_mean['alphas']
-			t7 = df_mean['alphas']
-			t8 = df_mean['alphas']
-			t9 = df_mean['alphas']
-			
-			ft1 = df_mean['area_AUC']
-			ft2 = df_mean['volume_AUC']
-			ft3 = df_mean['area_volume_ratio_AUC']
-			ft4 = df_mean['edge_ratio_AUC']
-			ft5 = df_mean['radius_ratio_AUC']
-			ft6 = df_mean['aspect_ratio_AUC']
-			ft7 = df_mean['max_solid_angle_AUC']
-			ft8 = df_mean['min_solid_angle_AUC']
-			ft9 = df_mean['solid_angle_AUC']
-			
-			ax.plot(t1, ft1, color='tab:blue', marker='o', label='area')
-			ax.plot(t2, ft2, color='tab:red', marker='o', label='volume')
-			ax.plot(t3, ft3, color='tab:green', marker='o', label='area_volume_ratio')
-			ax.plot(t4, ft4, color='tab:orange', marker='o', label='edge_ratio')
-			ax.plot(t5, ft5, color='tab:olive', marker='o', label='radius_ratio')
-			ax.plot(t6, ft6, color='tab:purple', marker='o', label='aspect_ratio')
-			ax.plot(t7, ft7, color='tab:brown', marker='o', label='max_solid_angle')
-			ax.plot(t8, ft8, color='tab:pink', marker='o', label='min_solid_angle')
-			ax.plot(t9, ft9, color='tab:gray', marker='o', label='solid_angle')
-			
-			leg = ax.legend(loc='upper right')
-			leg.get_frame().set_alpha(0.5)
-			plt.xticks(range(12))
-			plt.savefig(output_dir + kind + '_pic_average_auc.png', dpi=800)
-			plt.show()
-			plt.close()
-			df_mean.to_csv(output_dir + kind + '_pic_average_auc.csv', index=False)
+		M = ['_GEO','_IBA']
+		for o in order:
+			for m in M:
+				vals = []
+				for enc in encoders:
+					df_enc = df[df['ENCODER'] == enc]
+					vals.append(list(df_enc[o + m]))
+				
+				ft1 = vals[0]
+				ft2 = vals[1]
+				ft3 = vals[2]
+				ft4 = vals[3]
+				ft5 = vals[4]
+				ft6 = vals[5]
+				ft7 = vals[6]
+				ft8 = vals[7]
+				ft9 = vals[8]
+				ft10 = vals[9]
+				ft11 = vals[10]
+				ft12 = vals[11]
+				ft13 = vals[12]
+				
+				fig, ax = plt.subplots(figsize=(10, 7))
+				
+				t1 = alphas
+				t2 = alphas
+				t3 = alphas
+				t4 = alphas
+				t5 = alphas
+				t6 = alphas
+				t7 = alphas
+				t8 = alphas
+				t9 = alphas
+				t10 = alphas
+				t11 = alphas
+				t12 = alphas
+				t13 = alphas
+				
+				if m == '_GEO':
+					ext = 'GEO'
+				if m == '_IBA':
+					ext = 'IBA'
+					
+				ax.set_title('DTO RANK( '+ext+')\n '+o+ '\n', fontsize=5)
+				ax.set_xlabel('Alpha')
+				ax.set_ylabel('Rank')
+				
+				ax.plot(t1, ft1, color='tab:blue', marker='o', label='BaseNEncoder')
+				ax.plot(t2, ft2, color='tab:red', marker='o', label='BinaryEncoder')
+				ax.plot(t3, ft3, color='tab:green', marker='o', label='CatBoostEncoder')
+				ax.plot(t4, ft4, color='tab:orange', marker='o', label='GLMMEncoder')
+				ax.plot(t5, ft5, color='tab:olive', marker='o', label='HashingEncoder')
+				ax.plot(t6, ft6, color='tab:purple', marker='o', label='HelmertEncoder')
+				ax.plot(t7, ft7, color='tab:brown', marker='o', label='JamesSteinEncoder')
+				ax.plot(t8, ft8, color='tab:pink', marker='o', label='LeaveOneOutEncoder')
+				ax.plot(t9, ft9, color='tab:gray', marker='o', label='MEstimateEncoder')
+				ax.plot(t10, ft10, color='tab:purple', marker='x', label='OneHotEncoder')
+				ax.plot(t11, ft11, color='tab:brown', marker='x', label='OrdinalEncoder')
+				ax.plot(t12, ft12, color='tab:pink', marker='x', label='SumEncoder')
+				ax.plot(t13, ft13, color='tab:gray', marker='x', label='TargetEncoder')
+				
+				leg = ax.legend(loc='upper right')
+				leg.get_frame().set_alpha(0.5)
+				plt.xticks(range(12))
+				if m == '_GEO':
+					ext = 'geo'
+				if m == '_IBA':
+					ext = 'iba'
+				plt.savefig(output_dir  + o + '_'+ '_pic_best_encoder_'+ ext +'.png', dpi=800)
+				plt.show()
+				plt.close()
+				df.to_csv(output_dir + o + '_'+ '_pic_best_encoder_'+ ext +'.csv', index=False)
 	
 	def run_rank_choose_parameters(self, release):
 		for enc in encoders:

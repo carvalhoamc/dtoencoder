@@ -22,8 +22,8 @@ def run_analisys(r):
 	analisys = Performance()
 	#analisys.average_results(output_dir + 'encoder_results_' + r + '.csv',  release=r)
 	#analisys.run_rank_choose_parameters(release=r)
-	analisys.grafico_variacao_alpha( release=r)
-	analisys.best_alpha()
+	#analisys.grafico_variacao_alpha( release=r)
+	analisys.best_alpha_geometry()
 	
 
 
