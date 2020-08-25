@@ -24,5 +24,5 @@ order = [#'area',#ok
          'solid_angle']
 
 # Dirichlet Distribution alphas
-alphas = [0.5,1,7]
+alphas = [0.5,1.0,7.0]
 

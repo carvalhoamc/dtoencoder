@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from classifiers import classifiers_list
 from datasets import datasets
 from oversampling import order, alphas
+from collections import Counter
 
 output_dir = './../output/'
 rank_dir = './../rank/'
@@ -24,6 +25,17 @@ encoders = ['BaseNEncoder',
             'SumEncoder',
             'TargetEncoder'
             ]
+
+
+def split_encoders(results):
+	df = pd.read_csv(results)
+	dforiginal = df[df['PREPROC'] == 'original']
+	dfnc = df[df['PREPROC'] == 'smotenc']
+	
+	for enc in encoders:
+		df1 = df[df['ENCODER'] == enc]
+		dfoutput = pd.concat([dforiginal, dfnc, df1])
+		dfoutput.to_csv('./../input/' + enc + '.csv', index=False)
 
 
 class Performance:
@@ -66,7 +78,7 @@ class Performance:
 		print('Total lines in a file: ', i)
 		dfr.to_csv(input_dir + 'dto_encoders_average_results_' + str(release) + '.csv', index=False)
 	
-	def rank_by_algorithm(self, df, order, alpha, encoder, release, smote=False):
+	def rank_by_algorithm(self, df, order, alpha, release, encoder, smote=False):
 		'''
 		Calcula rank
 		:param df:
@@ -75,13 +87,14 @@ class Performance:
 		:param delaunay_type:
 		:return:
 		'''
+		df.to_csv('./../output/group/group_'+ encoder+'_'+'.csv')
 		measures = ['PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA']
 		
 		df_table = pd.DataFrame(
 				columns=['ENCODER', 'DATASET', 'ALGORITHM', 'ORIGINAL', 'RANK_ORIGINAL', 'SMOTENC',
-				         'RANK_SMOTENC', 'SMOTE', 'RANK_SMOTE','SMOTE_SVM', 'RANK_SMOTE_SVM', 'BORDERLINE1',
-				         'RANK_BORDERLINE1', 'BORDERLINE2','RANK_BORDERLINE2', 'GEOMETRIC_SMOTE',
-				         'RANK_GEOMETRIC_SMOTE', 'DTO', 'RANK_DTO','ORDER', 'ALPHA', 'UNIT'])
+				         'RANK_SMOTENC', 'SMOTE', 'RANK_SMOTE', 'SMOTE_SVM', 'RANK_SMOTE_SVM', 'BORDERLINE1',
+				         'RANK_BORDERLINE1', 'BORDERLINE2', 'RANK_BORDERLINE2', 'GEOMETRIC_SMOTE',
+				         'RANK_GEOMETRIC_SMOTE', 'DTO', 'RANK_DTO', 'ORDER', 'ALPHA', 'UNIT'])
 		
 		df_temp = df.groupby(by=['ALGORITHM'])
 		for name, group in df_temp:
@@ -93,15 +106,15 @@ class Performance:
 			#	df.to_csv(rank_dir + release + '_smote_' + kind + '_' + order + '_' + str(alpha) + '.csv', index=False)
 			
 			j = 0
+			print('j= ', j)
+			print('name= ', name)
 			for d in datasets:
 				for m in measures:
-					print('name= ',name)
 					print('d= ', d)
 					print('m= ', m)
-					print('j= ', j)
-					
 					aux = group[group['DATASET'] == d]
 					aux = aux.reset_index()
+					#aux.to_csv('./../output/group/'+name+str(j)+d+m+'.csv')
 					df_table.at[j, 'DATASET'] = d
 					df_table.at[j, 'ALGORITHM'] = name
 					df_table.at[j, 'ENCODER'] = encoder
@@ -142,8 +155,9 @@ class Performance:
 			spe = df_spe[
 				['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
 				 'GEOMETRIC_SMOTE', 'DTO']]
-			f1 = df_f1[['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
-			            'GEOMETRIC_SMOTE', 'DTO']]
+			f1 = df_f1[
+				['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
+				 'GEOMETRIC_SMOTE', 'DTO']]
 			geo = df_geo[
 				['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
 				 'GEOMETRIC_SMOTE', 'DTO']]
@@ -314,7 +328,7 @@ class Performance:
 				
 				# grafico CD
 				identificadores = ['ORIGINAL', 'SMOTENC', 'SMOTE', 'SMOTE_SVM', 'BORDERLINE1', 'BORDERLINE2',
-				                   'GEOMETRIC_SMOTE', 'dto_'+delaunay_type]
+				                   'GEOMETRIC_SMOTE', 'dto_' + delaunay_type]
 				avranks = list(media_pre_rank)
 				cd = Orange.evaluation.compute_CD(avranks, len(datasets))
 				Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
@@ -773,29 +787,30 @@ class Performance:
 			plt.close()
 			df_mean.to_csv(output_dir + kind + '_pic_average_auc.csv', index=False)
 	
-	def run_rank_choose_parameters(self, filename, release):
-		df_best_dto = pd.read_csv(filename)
+	def run_rank_choose_parameters(self, release):
 		for enc in encoders:
+			filename = enc + '.csv'
+			df_best_dto = pd.read_csv(input_dir + filename)
 			df_B1 = df_best_dto[df_best_dto['PREPROC'] == 'borderline1'].copy()
-			df_B1 = df_B1[df_B1['ENCODER'] == enc].copy()
 			df_B2 = df_best_dto[df_best_dto['PREPROC'] == 'borderline2'].copy()
-			df_B2 = df_B2[df_B2['ENCODER'] == enc].copy()
 			df_GEO = df_best_dto[df_best_dto['PREPROC'] == 'geometric_smote'].copy()
-			df_GEO = df_GEO[df_GEO['ENCODER'] == enc].copy()
 			df_SMOTE = df_best_dto[df_best_dto['PREPROC'] == 'smote'].copy()
-			df_SMOTE = df_SMOTE[df_SMOTE['ENCODER'] == enc].copy()
 			df_SMOTEsvm = df_best_dto[df_best_dto['PREPROC'] == 'smoteSVM'].copy()
-			df_SMOTEsvm = df_SMOTEsvm[df_SMOTEsvm['ENCODER'] == enc].copy()
 			df_original = df_best_dto[df_best_dto['PREPROC'] == 'original'].copy()
 			df_nc = df_best_dto[df_best_dto['PREPROC'] == 'smotenc'].copy()
+			df_dto = df_best_dto[df_best_dto['PREPROC'] == 'dtosmote'].copy()
 			for o in order:
 				for a in alphas:
-						df_dto = df_best_dto[df_best_dto['ORDER'] == o].copy()
-						df_dto1 = df_dto[df_dto['ALPHA'] == str(a)].copy()
-						df_dto2 = df_dto1[df_dto1['ENCODER'] == enc].copy()
-						df = pd.concat([df_B1, df_B2, df_GEO, df_SMOTE, df_SMOTEsvm, df_original, df_dto2, df_nc])
-						self.rank_by_algorithm(df, o, str(a), enc, release)
-						#self.rank_dto_by(o + '_' + str(a), kind, release)
+					print(str(o))
+					print(str(a))
+					df_order = df_dto[df_dto['ORDER']==str(o)].copy()
+					print(Counter(df_order['PREPROC']))
+					df_alpha = df_order[df_order['ALPHA']==str(a)].copy()
+					print(Counter(df_alpha['PREPROC']))
+					df = pd.concat([df_B1, df_B2, df_GEO, df_SMOTE, df_SMOTEsvm, df_alpha, df_original, df_nc])
+					print('contador= ',Counter(df['PREPROC']))
+					self.rank_by_algorithm(df, o, str(a), release, enc)
+					#self.rank_dto_by(o + '_' + str(a), release, enc)
 	
 	def run_global_rank(self, filename, kind, release):
 		df_best_dto = pd.read_csv(filename)
