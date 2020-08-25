@@ -20,17 +20,18 @@ def run_experiments():
 
 def run_analisys(r):
 	analisys = Performance()
-	#analisys.average_results(output_dir + 'encoder_results_' + r + '.csv',  release=r)
-	#analisys.run_rank_choose_parameters(release=r)
-	#analisys.grafico_variacao_alpha( release=r)
+	analisys.average_results(output_dir + 'encoder_results_' + r + '.csv',  release=r)
+	analisys.run_rank_choose_parameters(release=r)
+	analisys.grafico_variacao_alpha( release=r)
 	analisys.best_alpha_geometry()
+	#analisys.overall_rank()
 	
 
 
 def main():
 	start = time.time()
 	#run_experiments()
-	#split_encoders('./../input/dto_encoders_average_results_v1.csv')
+	split_encoders('./../input/dto_encoders_average_results_v1.csv')
 	run_analisys('v1')
 	
 	end = time.time()
