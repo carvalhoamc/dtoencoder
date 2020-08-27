@@ -5,7 +5,6 @@ datasets = [
 		'dresses-sales',  #
 		'dermatology',  #
 		'thyroid-hypothyroid',  #
-		#'acute-inflammations-nephritis',
 		'credit-approval',  #
 		'horse-colic-surgical',  #
 		'heart',  #

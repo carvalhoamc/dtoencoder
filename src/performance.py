@@ -684,6 +684,23 @@ class Performance:
 					output_dir + 'by_encoders_rank_results_' + geometry + '_' + str(
 							alpha) + '_' + ext + '.csv',
 					index=False)
+		
+		for j in np.arange(0,len(encoders)):
+			# grafico CD
+			identificadores = ['RANK_ORIGINAL','RANK_SMOTENC','RANK_SMOTE','RANK_SMOTE_SVM','RANK_BORDERLINE1',
+			                   'RANK_BORDERLINE2','RANK_GEOMETRIC_SMOTE','RANK_DTO']
+			media = df_mean.loc[j,:]
+			media = media[4:]
+			avranks = list(media)
+			cd = Orange.evaluation.compute_CD(avranks, len(datasets))
+			Orange.evaluation.graph_ranks(avranks, identificadores, cd=cd, width=9, textspace=3)
+			plt.savefig(
+				output_dir + 'by_encoders_rank_results_'+ df_mean.loc[j,'ENCODER'] + '_cd_' +
+				geometry + '_' + str(alpha) + '_' + ext +'.pdf')
+		plt.close()
+		
+		
+		
 	
 	def cd_graphics(self, df, datasetlen, kind):  # TODO
 		# grafico CD
