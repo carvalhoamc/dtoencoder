@@ -2,6 +2,7 @@ from encode_datasets import run
 import warnings
 import time
 
+from oversampling import alphas
 from performance import Performance, input_dir, output_dir, split_encoders
 
 warnings.filterwarnings('ignore')
@@ -24,7 +25,11 @@ def run_analisys(r):
 	analisys.run_rank_choose_parameters(release=r)
 	analisys.grafico_variacao_alpha( release=r)
 	analisys.best_alpha_geometry()
-	#analisys.overall_rank()
+	for a in alphas:
+		analisys.overall_rank('geo','v1','solid_angle',a)
+		analisys.overall_rank('iba', 'v1', 'solid_angle', a)
+		analisys.overall_rank('geo', 'v1', 'aspect_ratio', a)
+		analisys.overall_rank('iba', 'v1', 'aspect_ratio', a)
 	
 
 

@@ -56,7 +56,7 @@ class Performance:
 		                            'ALPHA', 'PRE', 'REC', 'SPE', 'F1', 'GEO', 'IBA'],
 		                   index=np.arange(0, int(t.shape[0] / 5)))
 		
-		df_temp = df.groupby(by=['ENCODER', 'DATASET', 'PREPROC', 'ALGORITHM', 'PREPROC', 'ORDER', 'ALPHA'])
+		df_temp = df.groupby(by=['ENCODER', 'DATASET', 'PREPROC', 'ALGORITHM', 'ORDER', 'ALPHA'])
 		idx = dfr.index.values
 		i = idx[0]
 		for name, group in df_temp:
@@ -537,9 +537,7 @@ class Performance:
 			df1['ENCODER'] = enc
 			df = pd.concat([df, df1])
 		
-		
-		
-		M = ['_GEO','_IBA']
+		M = ['_GEO', '_IBA']
 		for o in order:
 			for m in M:
 				vals = []
@@ -581,8 +579,8 @@ class Performance:
 					ext = 'GEO'
 				if m == '_IBA':
 					ext = 'IBA'
-					
-				ax.set_title('DTO RANK( '+ext+')\n '+o+ '\n', fontsize=5)
+				
+				ax.set_title('DTO RANK( ' + ext + ')\n ' + o + '\n', fontsize=5)
 				ax.set_xlabel('Alpha')
 				ax.set_ylabel('Rank')
 				
@@ -607,10 +605,10 @@ class Performance:
 					ext = 'geo'
 				if m == '_IBA':
 					ext = 'iba'
-				plt.savefig(output_dir  + o + '_'+ '_pic_best_encoder_'+ ext +'.png', dpi=800)
+				plt.savefig(output_dir + o + '_' + '_pic_best_encoder_' + ext + '.png', dpi=800)
 				plt.show()
 				plt.close()
-				df.to_csv(output_dir + o + '_'+ '_pic_best_encoder_'+ ext +'.csv', index=False)
+				df.to_csv(output_dir + o + '_' + '_pic_best_encoder_' + ext + '.csv', index=False)
 	
 	def run_rank_choose_parameters(self, release):
 		for enc in encoders:
@@ -655,33 +653,37 @@ class Performance:
 		self.rank_by_algorithm(df, kind, o, str(a), release, smote=True)
 		self.rank_dto_by(o + '_' + str(a), kind, release, smote=True)
 	
-	def overall_rank(self, ext, kind, alpha):
-		df1 = pd.read_csv(
-				output_dir + 'v1_smote_' + kind + '_results_media_rank_solid_angle_' + str(alpha) + '_' + ext + '.csv')
-		df2 = pd.read_csv(
-				output_dir + 'v2_smote_' + kind + '_results_media_rank_solid_angle_' + str(alpha) + '_' + ext + '.csv')
-		df3 = pd.read_csv(
-				output_dir + 'v3_smote_' + kind + '_results_media_rank_solid_angle_' + str(alpha) + '_' + ext + '.csv')
-		
-		col = ['RANK_ORIGINAL', 'RANK_SMOTE', 'RANK_SMOTE_SVM', 'RANK_BORDERLINE1'
-				, 'RANK_BORDERLINE2', 'RANK_GEOMETRIC_SMOTE', 'RANK_DELAUNAY']
-		
+	def overall_rank(self, ext, release, geometry, alpha):
+		i = 0
 		df_mean = pd.DataFrame()
-		df_mean['ALGORITHM'] = df1.ALGORITHM
-		df_mean['unit'] = df1.unit
-		for c in col:
-			for i in np.arange(0, df1.shape[0]):
-				df_mean.loc[i, c] = (df1.loc[i, c] + df2.loc[i, c] + df3.loc[i, c]) / 3.0
-		
-		df_mean['RANK_ORIGINAL'] = pd.to_numeric(df_mean['RANK_ORIGINAL'], downcast="float").round(2)
-		df_mean['RANK_SMOTE'] = pd.to_numeric(df_mean['RANK_SMOTE'], downcast="float").round(2)
-		df_mean['RANK_SMOTE_SVM'] = pd.to_numeric(df_mean['RANK_SMOTE_SVM'], downcast="float").round(2)
-		df_mean['RANK_BORDERLINE1'] = pd.to_numeric(df_mean['RANK_BORDERLINE1'], downcast="float").round(2)
-		df_mean['RANK_BORDERLINE2'] = pd.to_numeric(df_mean['RANK_BORDERLINE2'], downcast="float").round(2)
-		df_mean['RANK_GEOMETRIC_SMOTE'] = pd.to_numeric(df_mean['RANK_GEOMETRIC_SMOTE'], downcast="float").round(2)
-		df_mean['RANK_DELAUNAY'] = pd.to_numeric(df_mean['RANK_DELAUNAY'], downcast="float").round(2)
-		
-		df_mean.to_csv(output_dir + 'overall_rank_results_' + kind + '_' + str(alpha) + '_' + ext + '.csv', index=False)
+		for enc in encoders:
+			df1 = pd.DataFrame()
+			for cls in classifiers_list:
+				df = pd.read_csv(
+						rank_dir + release + '_' + enc + '_total_rank_' + geometry + '_' + str(
+								alpha) + '_' + cls + '_' + ext + '.csv')
+				df1 = pd.concat([df1, df])
+			
+			df1 = df1.reset_index()
+			df_mean.loc[i, 'ENCODER'] = df1.loc[0, 'ENCODER']
+			df_mean.loc[i, 'UNIT'] = df1.loc[0, 'UNIT']
+			df_mean.loc[i, 'ORDER'] = df1.loc[0, 'ORDER']
+			df_mean.loc[i, 'ALPHA'] = df1.loc[0, 'ALPHA']
+			
+			df_mean.loc[i, 'RANK_ORIGINAL'] = pd.to_numeric(df1['RANK_ORIGINAL'].mean(), downcast="float")
+			df_mean.loc[i, 'RANK_SMOTENC'] = pd.to_numeric(df1['RANK_SMOTENC'].mean(), downcast="float")
+			df_mean.loc[i, 'RANK_SMOTE'] = pd.to_numeric(df1['RANK_SMOTE'].mean(), downcast="float")
+			df_mean.loc[i, 'RANK_SMOTE_SVM'] = pd.to_numeric(df1['RANK_SMOTE_SVM'].mean(), downcast="float")
+			df_mean.loc[i, 'RANK_BORDERLINE1'] = pd.to_numeric(df1['RANK_BORDERLINE1'].mean(), downcast="float")
+			df_mean.loc[i, 'RANK_BORDERLINE2'] = pd.to_numeric(df1['RANK_BORDERLINE2'].mean(), downcast="float")
+			df_mean.loc[i, 'RANK_GEOMETRIC_SMOTE'] = pd.to_numeric(df1['RANK_GEOMETRIC_SMOTE'].mean(), downcast="float")
+			df_mean.loc[i, 'RANK_DTO'] = pd.to_numeric(df1['RANK_DTO'].mean(), downcast="float")
+			i = i + 1
+			
+		df_mean.to_csv(
+					output_dir + 'by_encoders_rank_results_' + geometry + '_' + str(
+							alpha) + '_' + ext + '.csv',
+					index=False)
 	
 	def cd_graphics(self, df, datasetlen, kind):  # TODO
 		# grafico CD
